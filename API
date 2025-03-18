@@ -1,0 +1,144 @@
+### Инструкция по использованию API
+
+API реализовано на **Node.js** с использованием **Express.js**, **MongoDB** и **Socket.io**. Взаимодействие идет через **REST API + WebSocket**.
+
+#### **1. Регистрация пользователя**
+- **Endpoint:** `POST /api/auth/register`
+- **Описание:** Регистрирует нового пользователя.
+- **Тело запроса (JSON):**
+  ```json
+  {
+    "username": "exampleUser",
+    "publicKey": "PUBLIC_KEY",
+    "deviceToken": "DEVICE_TOKEN"
+  }
+  ```
+- **Ответ (JSON):**
+  ```json
+  {
+    "token": "JWT_TOKEN"
+  }
+  ```
+
+---
+
+#### **2. Авторизация (получение токена)**
+- **Endpoint:** `POST /api/auth/login`
+- **Описание:** Вход в систему.
+- **Тело запроса (JSON):**
+  ```json
+  {
+    "username": "exampleUser",
+    "password": "hashedPassword"
+  }
+  ```
+- **Ответ (JSON):**
+  ```json
+  {
+    "token": "JWT_TOKEN"
+  }
+  ```
+
+---
+
+#### **3. Поиск пользователей**
+- **Endpoint:** `GET /api/users/search?query=имя`
+- **Описание:** Ищет пользователей по имени (минимум 3 символа) и фильтрует по онлайн-статусу.
+- **Ответ (JSON):**
+  ```json
+  [
+    {
+      "id": "USER_ID",
+      "username": "exampleUser",
+      "isOnline": true
+    }
+  ]
+  ```
+- Дополнительно можно сортировать пользователей по активности:
+  - `sort=lastSeen` – сортирует пользователей по последнему времени в сети.
+
+---
+
+#### **4. Отправка сообщения**
+- **Endpoint:** `POST /api/messages/send`
+- **Описание:** Отправляет зашифрованное сообщение.
+- **Тело запроса (JSON):**
+  ```json
+  {
+    "messageId": "MESSAGE_UUID",
+    "recipientId": "RECIPIENT_USER_ID",
+    "encryptedContent": "ENCRYPTED_TEXT",
+    "iv": "INITIALIZATION_VECTOR",
+    "chatId": "CHAT_ID"
+  }
+  ```
+- **Ответ (JSON):**
+  ```json
+  {
+    "status": "sent"
+  }
+  ```
+
+---
+
+#### **5. Получение сообщений**
+- **Endpoint:** `GET /api/messages/:chatId`
+- **Описание:** Получает список сообщений в чате.
+- **Ответ (JSON):**
+  ```json
+  [
+    {
+      "messageId": "MESSAGE_UUID",
+      "senderId": "SENDER_ID",
+      "encryptedContent": "ENCRYPTED_TEXT",
+      "timestamp": "DATE_TIME"
+    }
+  ]
+  ```
+
+---
+
+#### **6. Создание чата**
+- **Endpoint:** `POST /api/chats/create`
+- **Описание:** Создает новый чат.
+- **Тело запроса (JSON):**
+  ```json
+  {
+    "participants": ["USER_ID_1", "USER_ID_2"]
+  }
+  ```
+- **Ответ (JSON):**
+  ```json
+  {
+    "chatId": "NEW_CHAT_ID"
+  }
+  ```
+
+---
+
+#### **7. Получение списка чатов**
+- **Endpoint:** `GET /api/chats`
+- **Описание:** Получает список чатов пользователя, отсортированный по последнему обновлению.
+- **Ответ (JSON):**
+  ```json
+  [
+    {
+      "chatId": "CHAT_ID",
+      "participants": ["USER_ID_1", "USER_ID_2"],
+      "lastMessage": "MESSAGE_ID",
+      "updatedAt": "DATE_TIME"
+    }
+  ]
+  ```
+
+---
+
+### **Обновления и улучшения**
+1. **Добавлен `/login`** – маршрут авторизации в `auth.js`.
+2. **Добавлены `timestamps` в модели сообщений, чатов и пользователей**.
+3. **Добавлены индексы для ускорения поиска** (`chatId`, `senderId`, `recipientId`, `updatedAt`, `participants`).
+4. **Автоудаление сообщений** с полем `scheduledDeletion` в MongoDB.
+5. **Фильтр пользователей по `isOnline` и `lastSeen`** – ускоряет поиск активных пользователей.
+6. **WebSocket-логика** требует уточнения по `message` и `seen`.
+7. **Улучшена индексация в моделях** – теперь быстрее работает поиск сообщений, чатов и пользователей.
+8. **Оптимизировано хранение времени обновления (`updatedAt`)** – упрощает сортировку.
